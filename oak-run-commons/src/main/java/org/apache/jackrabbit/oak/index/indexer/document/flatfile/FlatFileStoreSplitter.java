@@ -115,12 +115,13 @@ public class FlatFileStoreSplitter {
 
             String line;
             int lineCount = 0;
-            Stack<String> parentNodeTypeNames = new Stack<>();
+            Stack<String> nodeTypeNameStack = new Stack<>();
             while ((line = reader.readLine()) != null) {
-                updateParentNodeTypes(parentNodeTypeNames, line);
+                updateParentNodeTypes(nodeTypeNameStack, line);
                 boolean shouldSplit = (readPos > splitThreshold) && (outFileIndex < splitSize);
-                if (shouldSplit && canSplit(splitNodeTypesName, parentNodeTypeNames)) {
+                if (shouldSplit && canSplit(splitNodeTypesName, nodeTypeNameStack)) {
                     writer.close();
+                    log.info("created split flat file {} with size {}", currentFile.getAbsolutePath(), FileUtils.byteCountToDisplaySize(currentFile.length()));
                     readPos = 0;
                     outFileIndex++;
                     currentFile = new File(workDir, "split-" + outFileIndex + "-" + getSortedStoreFileName(useZip));
@@ -180,8 +181,8 @@ public class FlatFileStoreSplitter {
         return "";
     }
 
-    private boolean canSplit(Set<String> nodeTypes, List<String> parentNodeTypeNames) {
-        for (String parentNodeTypeName : parentNodeTypeNames) {
+    private boolean canSplit(Set<String> nodeTypes, Stack<String> nodeTypeNameStack) {
+        for (String parentNodeTypeName : nodeTypeNameStack.subList(0, nodeTypeNameStack.size()-1)) {
             if (nodeTypes.contains(parentNodeTypeName)) {
                 return false;
             }
